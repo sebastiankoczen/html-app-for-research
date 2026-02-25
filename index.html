@@ -993,7 +993,9 @@ The name of the publication or document, followed by the direct clickable URL.
 Example: Reuters — https://...
 ===============================================================================
 FINAL SYSTEM INSTRUCTION (MANDATORY ENFORCEMENT):
-Situation Status	Detected Signal	Evidence & Quote	Source & URL
+===============================================================================
+| Situation Status | Detected Signal | Evidence & Quote | Source & URL |
+|---|---|---|---|
 `
 };
 
@@ -1184,7 +1186,14 @@ async function callGemini(key, model, messages, temp, maxTok) {
     if (m.role === 'system') { sys = m.content; continue; }
     contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] });
   }
-  const body = { contents, generationConfig: { temperature: temp, maxOutputTokens: maxTok } };
+  
+  // Added tools: [{ googleSearch: {} }] to give Gemini internet access
+  const body = { 
+    contents, 
+    generationConfig: { temperature: temp, maxOutputTokens: maxTok },
+    tools: [{ googleSearch: {} }]
+  };
+  
   if (sys) body.systemInstruction = { parts: [{ text: sys }] };
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
@@ -1227,7 +1236,7 @@ async function runPrompt() {
     let result;
     const p = PROVIDERS[pid];
     if (p.type === 'gemini') {
-      result = await callGemini(key, model, messages, 0.7, 8000); // Increased tokens just in case
+      result = await callGemini(key, model, messages, 0.7, 8000); 
     } else {
       let url = p.url;
       if (pid === 'custom') url = document.getElementById('custom-url').value.trim().replace(/\/$/, '') + '/chat/completions';
