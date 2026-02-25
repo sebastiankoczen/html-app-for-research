@@ -785,15 +785,10 @@ The four situations below are the ONLY valid situations to detect and score. Do 
 SITUATION 1 — RESOURCE CONSTRAINTS
 Definition: Company shows insufficient execution capacity (people/bandwidth) in Supply Chain and/or Procurement. Capability gap: missing specialised expertise required to deliver initiatives (not just to design them). Execution backlog persists despite clear priorities or announced programs. Evidence must show internal resourcing shortfall, not external demand/supply shocks.
 What it is NOT (avoid false positives):
-
     Not a temporary peak workload caused only by seasonality
-
     Not general hiring for growth (normal scaling)
-
     Not project delays caused mainly by unclear governance, strategy uncertainty, or budget freeze
-
     Not a supply disruption (that is Situation 4)
-
     Not margin-driven layoffs (that is Situation 2)
     Observable signals and weights:
     Financial
@@ -815,15 +810,10 @@ What it is NOT (avoid false positives):
 SITUATION 2 — MARGIN PRESSURE
 Definition: Profitability declines or stays structurally weak due to cost inflation, inefficiency, or pricing pressure. Company explicitly announces cost reduction / productivity / cash protection measures. Margin deterioration is not explained solely by planned investment for growth. Typically evidenced through management statements and financial results.
 What it is NOT (avoid false positives):
-
     Not a growth investment phase with strong profitability maintained
-
     Not a one-off exceptional event without continuation (unless reconfirmed)
-
     Not pure FX impact with otherwise stable margins
-
     Not disruption-driven service failure only (Situation 4)
-
     Not resource lack without financial stress (Situation 1)
     Observable signals and weights:
     Financial
@@ -846,15 +836,10 @@ What it is NOT (avoid false positives):
 SITUATION 3 — SIGNIFICANT GROWTH
 Definition: Company shows rapid growth in revenue, production volumes, footprint or channels. Growth creates operational scaling pressure (capacity, service levels, inventory, supplier capability). Evidence shows expansion initiatives (plants/DCs, new markets, M&A integration, product launches). Growth outpaces operational maturity / systems.
 What it is NOT (avoid false positives):
-
     Not stable or low growth with routine hiring
-
     Not pure share price growth without operational scaling evidence
-
     Not growth driven only by short-lived commodity pricing
-
     Not disruption-related volume spikes from shortages elsewhere (unless sustained)
-
     Not margin pressure disguised as a growth story
     Observable signals and weights:
     Financial
@@ -876,15 +861,10 @@ What it is NOT (avoid false positives):
 SITUATION 4 — SUPPLY CHAIN DISRUPTION
 Definition: Company experiences severe, active disruption affecting service, supply continuity, capacity, or logistics. Evidence includes shortages, delays, shutdowns, supplier failure, quality incidents, forced re-sourcing. Disruption has material business impact: lost sales, missed guidance, customer penalties, inventory shock. Requires stabilisation actions beyond normal operations.
 What it is NOT (avoid false positives):
-
     Not normal lead time variability
-
     Not margin pressure without supply failure
-
     Not internal capacity constraints unrelated to external disruptions
-
     Not planned shutdowns / routine maintenance
-
     Not generic risk statements without observable events
     Observable signals and weights:
     Financial
@@ -910,43 +890,27 @@ EVALUATION PROTOCOL
     SCORING — SIGNAL STRENGTH MATRIX (Deterministic)
     Score each of the 4 situations independently using the signal weights defined above. Score every valid signal found.
     Signal weights:
-
     STRONG signal confirmed by evidence = +2 points
-
     MEDIUM signal confirmed by evidence = +1 point
 
 Counting rules (strict):
-
     Each counted signal must have at least 1 confirmed source link.
-
     The same signal can be counted only once even if repeated across multiple sources.
-
     Each situation is scored independently — no spillover points between situations.
-
     Only signals explicitly listed in the Situation Definitions above are valid — do not score signals not listed there.
 
 Classification thresholds (apply per situation after summing all signal points):
-
     CONFIRMED = 10 or more points
-
     LIKELY = 6 to 9 points
-
     UNCLEAR = 3 to 5 points
-
     NOT PRESENT = 0 to 2 points
 
     CRITICAL ANTI-HALLUCINATION AND EVIDENCE RULES
-
     Zero Prior Knowledge: use ONLY publicly available online evidence reviewed during this exact session.
-
     No Hallucinated URLs: all URLs must be real, clickable, and point directly to the source. If you cannot find a real URL, you cannot use the evidence.
-
     Direct Quotes Mandatory: every piece of evidence MUST be backed by a short direct verbatim quote of 25 words or fewer from the source.
-
     Strict Date Limit: Sources MUST be no older than 12 months from today's date. Prioritise evidence from the last 6 months. Reject undated articles and absolutely reject anything older than 12 months.
-
     Page Numbers: if the URL leads to an Annual Report or Investor Deck, state the page or slide number.
-
     Source Diversity: minimum 3 independent sources per company; at least one must NOT be from the company's own domain.
 
 ===============================================================================
@@ -956,19 +920,13 @@ Present the deep scan as ONE single Markdown table optimised for HTML export.
 
 SYSTEM OVERRIDE: API EXPORT MODE
 You are now operating as a strict data-export parser.
-
-    ABSOLUTELY NO CONVERSATIONAL TEXT: Do not include greetings, introductions, acknowledgments, explanations, or concluding remarks.
-
-    TABLE ONLY: Your entire response MUST begin exactly with the first character of the Markdown table header (|) and end exactly with the last character of the table grid (|).
-
-    If you output a single word outside of the Markdown table structure, you have failed the prompt.
+    1. DO NOT SHOW YOUR WORK: Do not write out your scoring math, do not explain your reasoning, and do not use a scratchpad. Calculate the points silently.
+    2. ABSOLUTELY NO CONVERSATIONAL TEXT: Do not include greetings, introductions like "Here is a breakdown", acknowledgments, explanations, or concluding remarks.
+    3. TABLE ONLY: Your entire response MUST consist of ONLY the Markdown table.
 
 CRITICAL ROW RULE (ONE SIGNAL PER ROW):
-
     You must create exactly ONE row for every single signal detected.
-
     If a situation has 3 signals, create 3 separate rows for that situation.
-
     If a situation has 0 signals, create 1 row for it and write "No signals detected" in the subsequent columns.
 
 The table must have exactly these 4 columns in this order:
@@ -994,6 +952,7 @@ Example: Reuters — https://...
 ===============================================================================
 FINAL SYSTEM INSTRUCTION (MANDATORY ENFORCEMENT):
 ===============================================================================
+DO NOT WRITE ANY TEXT, SCORING MATH, OR THOUGHT PROCESS BEFORE THE TABLE. BEGIN YOUR RESPONSE EXACTLY WITH:
 | Situation Status | Detected Signal | Evidence & Quote | Source & URL |
 |---|---|---|---|
 `
