@@ -643,7 +643,7 @@ footer .sep { color: var(--gray-200); }
             <label>Model</label>
             <div class="model-row">
               <select id="model"></select>
-              <button class="fetch-btn" onclick="fetchModels()" title="Load models available with your key">⟳ Load</button>
+              <button class="fetch-btn" id="fetch-btn" onclick="fetchModels()" title="Load models available with your key">⟳ Load</button>
             </div>
           </div>
         </div>
@@ -749,9 +749,9 @@ const CONFIG = {
   // ── Run button hint ───────────────────────────────────────────────────────
   runHint: 'The Signal Strength Matrix and Counter-Evidence checks run automatically — just click Run.',
 
-  // ── The AI role (system prompt) ───────────────────────────────────────────
-  systemPrompt: `You are a senior Supply Chain & Procurement strategy consultant performing structured market intelligence analysis.
-CONTEXT: We are a boutique Supply Chain & Procurement consulting firm operating as a rapid-deployment task force.`,
+  // ── The AI role (system prompt) - HIGHLY RESTRICTIVE ──────────────────────
+  systemPrompt: `You are a strict data-export API parser acting as a Supply Chain & Procurement strategy consultant.
+You ONLY output Markdown tables. You NEVER output conversational text, greetings, reasoning, or summaries. If you output a single word outside the table, the system crashes.`,
 
   // ── The prompt template ───────────────────────────────────────────────────
   promptTemplate: `TARGET COMPANY TO ANALYSE: {{input}}
@@ -973,9 +973,9 @@ const PROVIDERS = {
   perplexity: {
     name: 'Perplexity AI',
     url: 'https://api.perplexity.ai/chat/completions',
-    models: ['llama-3.1-sonar-large-128k-online', 'llama-3.1-sonar-small-128k-online', 'llama-3.1-sonar-huge-128k-online'],
+    models: ['sonar-pro', 'sonar', 'sonar-reasoning', 'r1-1776'],
     keyHint: 'Get your key at <a href="https://www.perplexity.ai/settings/api" target="_blank">perplexity.ai → Settings → API</a>.',
-    note: { type: 'ok', msg: '✓ Works directly from the browser.' },
+    note: { type: 'ok', msg: '✓ Perplexity models are built-in and ready. (Do not click Load)' },
     type: 'openai'
   },
   openai: {
@@ -1042,6 +1042,9 @@ function onProviderChange() {
   sel.innerHTML = p.models.map(m => `<option value="${m}">${m}</option>`).join('');
 
   document.getElementById('key-hint').innerHTML = p.keyHint;
+  
+  // Disable load button for Perplexity to prevent CORS failure
+  document.getElementById('fetch-btn').style.display = pid === 'perplexity' ? 'none' : 'block';
 
   const noteEl = document.getElementById('provider-note');
   noteEl.className = 'provider-note';
@@ -1094,6 +1097,12 @@ async function fetchModels() {
   const pid  = document.getElementById('provider').value;
   const key  = document.getElementById('api-key').value.trim();
   const hint = document.getElementById('model-hint');
+  
+  if (pid === 'perplexity') {
+    hint.innerHTML = '<span style="color:var(--green)">✓ Perplexity models are built-in and ready.</span>';
+    return;
+  }
+
   if (!key && pid !== 'custom') { hint.innerHTML = '<span style="color:var(--red)">Enter your API key first.</span>'; return; }
 
   hint.innerHTML = 'Loading models…';
@@ -1146,7 +1155,6 @@ async function callGemini(key, model, messages, temp, maxTok) {
     contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] });
   }
   
-  // Added tools: [{ googleSearch: {} }] to give Gemini internet access
   const body = { 
     contents, 
     generationConfig: { temperature: temp, maxOutputTokens: maxTok },
@@ -1204,16 +1212,22 @@ async function runPrompt() {
 
     document.getElementById('skeleton').classList.remove('visible');
 
-    // Strip out <think> tags in case a reasoning model was selected
+    // ── Output Cleanup (Jailbreaking Conversational Filler) ──
+    // Strip out <think> tags completely
     result = result.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+    
+    // If the AI included text before the table, we aggressively cut it out
+    const tableStartIndex = result.indexOf('|');
+    if (tableStartIndex > -1) {
+        result = result.substring(tableStartIndex); // Delete everything before the first pipe
+    }
 
     const out = document.getElementById('output-content');
     
-    // Using the injected Marked.js library to flawlessly render the Markdown table
     if (typeof marked !== 'undefined') {
       out.innerHTML = marked.parse(result);
     } else {
-      out.textContent = result; // Safe fallback if internet blocks CDN
+      out.textContent = result;
     }
 
     setStatus('ready', 'Done');
