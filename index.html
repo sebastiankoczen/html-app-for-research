@@ -446,6 +446,7 @@ textarea { resize: vertical; line-height: 1.65; min-height: 100px; }
 .output-body {
   padding: 28px 28px;
   min-height: 120px;
+  overflow-x: auto;
 }
 
 /* loading skeleton */
@@ -525,6 +526,7 @@ textarea { resize: vertical; line-height: 1.65; min-height: 100px; }
 #output-content td {
   border: 1px solid var(--gray-200);
   padding: 8px 12px;
+  vertical-align: top;
 }
 #output-content hr { border: none; border-top: 1px solid var(--gray-200); margin: 18px 0; }
 
@@ -932,11 +934,10 @@ Column 5 — Verified Sources and Quotes
 `,
 
   // ── Output rendering ──────────────────────────────────────────────────────
-  // Switched back to HTML so the browser renders the visual table grid
   outputMode: 'html',
 
 };
-};
+
 // ═══════════════════════════════════════════════════════════════════════════
 //  Engine — no need to edit below this line
 // ═══════════════════════════════════════════════════════════════════════════
@@ -944,7 +945,7 @@ Column 5 — Verified Sources and Quotes
 const PROVIDERS = {
   gemini: {
     name: 'Google Gemini',
-    models: ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-1.5-pro'],
+    models: ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash', 'gemini-1.5-pro'],
     keyHint: 'Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a> — no billing required.',
     note: { type: 'ok', msg: '✓ Works directly from the browser. No proxy needed.' },
     type: 'gemini'
