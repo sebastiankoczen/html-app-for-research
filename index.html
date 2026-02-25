@@ -826,30 +826,24 @@ Classification thresholds (apply per situation after summing all signal points):
 •	Page Numbers: if the URL leads to an Annual Report or Investor Deck, state the page or slide number.
 •	Source Diversity: minimum 3 independent sources per company; at least one must NOT be from the company's own domain.
 =============================================================================== OUTPUT FORMAT: THE DEEP SCAN TABLE
-Present the deep scan for ALL companies as ONE single unified Markdown table optimised for HTML export.
+Present the deep scan as ONE single Markdown table optimised for HTML export.
 SYSTEM OVERRIDE: API EXPORT MODE You are now operating as a strict data-export parser.
 •	ABSOLUTELY NO CONVERSATIONAL TEXT: Do not include greetings, introductions, acknowledgments, explanations, or concluding remarks.
 •	TABLE ONLY: Your entire response MUST begin exactly with the first character of the Markdown table header (|) and end exactly with the last character of the table grid (|).
 •	If you output a single word outside of the Markdown table structure, you have failed the prompt.
-•	One row per company — all data for a single company in its single row.
-•	Use Markdown bullet points inside cells for readability.
+CRITICAL ROW RULE (ONE SIGNAL PER ROW):
+•	You must create exactly ONE row for every single signal detected.
+•	If a situation has 3 signals, create 3 separate rows for that situation.
+•	If a situation has 0 signals, create 1 row for it and write "No signals detected" in the Signal and Source columns.
 The table must have exactly these 4 columns in this order:
-Column 1 — Company Name Group level, deduplicated, no legal suffixes (AG / SA / GmbH / Ltd / PLC).
-Column 2 — Situation Status (All 4) List all 4 situations explicitly. For each situation show the classification and the total point score that produced it. Format exactly as follows (one situation per line):
-•	RC: [CONFIRMED / LIKELY / UNCLEAR / NOT PRESENT] ([X] pts)
-•	MP: [CONFIRMED / LIKELY / UNCLEAR / NOT PRESENT] ([X] pts)
-•	SG: [CONFIRMED / LIKELY / UNCLEAR / NOT PRESENT] ([X] pts)
-•	SCD: [CONFIRMED / LIKELY / UNCLEAR / NOT PRESENT] ([X] pts)
-RC = Resource Constraints | MP = Margin Pressure | SG = Significant Growth | SCD = Supply Chain Disruption Thresholds: CONFIRMED >= 10 pts | LIKELY 6-9 pts | UNCLEAR 3-5 pts | NOT PRESENT 0-2 pts Mark the highest-scoring situation with an asterisk (*) after its classification to indicate it as the dominant situation.
-Column 3 — Integrated Signals, Evidence & Sources Provide a bulleted list where the signal, the verbatim quote, the source, and the URL are seamlessly connected on the exact same line.
-•	Use only signals from the Situation Definitions embedded in this prompt.
-•	Each bullet MUST contain: The Situation Code, the exact Signal Name, the Score, a verbatim quote under 25 words, the Date, the Source Name, and the URL.
-•	Format strictly like this:
-o	[Situation Code] — [Signal Name] ([STRONG +2 / MEDIUM +1]): "[Verbatim Quote]" — [Source Name], [YYYY-MM-DD] — [URL]
-•	Example: MP — Gross margin decline reported as structural (STRONG +2): "Gross margins contracted by 400bps due to persistent structural inflation." — Reuters, 2023-10-14 — https://...
-Column 4 — Counter-Evidence / Risks Bullet points of any data suggesting the company has resolved the situation or does not need external help. Write "None identified" if no mitigating evidence found.
+Column 1 — Situation Status Use FULL NAMES for the 4 situations: Resource Constraints, Margin Pressure, Significant Growth, Supply Chain Disruption. Format: [Full Situation Name]: [CONFIRMED / LIKELY / UNCLEAR / NOT PRESENT] ([X] pts) Example: Resource Constraints: LIKELY (8 pts) Mark the highest-scoring situation with an asterisk (*) after its classification to indicate it as the dominant situation. Repeat this exactly for every row belonging to the same situation.
+Column 2 — Detected Signal The exact signal name from the framework and its weight. Example: Urgent hiring for SC/Proc roles (STRONG +2)
+Column 3 — Evidence & Source This MUST match the exact signal in Column 2. Include the verbatim quote, Date, Source Name, and URL. Example: "Hiring 50 new supply chain analysts immediately to combat execution lag." — Reuters, 2023-10-14 — [URL]
+Column 4 — Counter-Evidence / Risks Mitigating factors for this situation. Repeat it for all rows in that situation, or write "None identified".
 =============================================================================== FINAL SYSTEM INSTRUCTION (MANDATORY ENFORCEMENT):
-Company Name	Situation Status	Integrated Signals, Evidence & Sources	Counter-Evidence / Risks
+Situation Status	Detected Signal	Evidence & Source	Counter-Evidence / Risks
+
+
 `
 };
 
