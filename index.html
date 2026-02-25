@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Prompt Runner</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0f11;
+    --surface: #16181c;
+    --surface2: #1e2128;
+    --border: #2a2d35;
+    --amber: #f5a623;
+    --amber-dim: #c47e10;
+    --green: #3ddc84;
+    --red: #ff5f5f;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--surface);
+  }
+
+  .logo-mark {
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--amber);
+    display: grid;
+    place-items: center;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--amber);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  header h1 {
+    font-family: var(--mono);
+    font-size: 14px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+
+  header .tagline {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* LEFT PANEL */
+  .left-panel {
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .section {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+    margin-bottom: 6px;
+    letter-spacing: 0.05em;
+  }
+
+  select, input[type="text"], input[type="password"], textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 9px 12px;
+    outline: none;
+    transition: border-color 0.15s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  select:focus, input:focus, textarea:focus {
+    border-color: var(--amber);
+  }
+  select {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
+  }
+  textarea { resize: vertical; line-height: 1.6; }
+
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+
+  .key-wrap { position: relative; }
+  .key-wrap input { padding-right: 40px; }
+  .eye-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px;
+    line-height: 1;
+  }
+  .eye-btn:hover { color: var(--amber); }
+
+  .hint {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .hint a { color: var(--amber); text-decoration: none; }
+  .hint a:hover { text-decoration: underline; }
+
+  .cors-warning {
+    background: rgba(255,95,95,0.08);
+    border: 1px solid rgba(255,95,95,0.3);
+    border-left: 3px solid var(--red);
+    padding: 10px 12px;
+    font-size: 11px;
+    color: #ff9999;
+    line-height: 1.5;
+    margin-top: 10px;
+    display: none;
+    font-family: var(--mono);
+  }
+
+  /* RIGHT PANEL */
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .top-area {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .prompt-area {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .prompt-area textarea {
+    font-size: 13px;
+    min-height: 120px;
+    background: var(--surface);
+    border-color: var(--border);
+  }
+
+  .hint-tag {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--amber);
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 7px;
+    margin-top: 6px;
+  }
+
+  .user-input-area {
+    padding: 20px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .run-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .run-btn {
+    background: var(--amber);
+    color: #000;
+    border: none;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 11px 28px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    flex-shrink: 0;
+  }
+  .run-btn:hover { background: #ffc157; }
+  .run-btn:active { transform: scale(0.97); }
+  .run-btn:disabled { background: var(--muted); cursor: not-allowed; }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .status-dot.running { background: var(--amber); animation: pulse 1s infinite; }
+  .status-dot.ok { background: var(--green); }
+  .status-dot.err { background: var(--red); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .status-text {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* OUTPUT */
+  .output-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px;
+    background: var(--bg);
+  }
+
+  .output-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .output-label span { color: var(--amber); }
+
+  .output-frame {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    min-height: 200px;
+    padding: 24px;
+  }
+
+  .output-frame.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.05em;
+  }
+
+  /* Rendered HTML output styles */
+  .output-frame h1, .output-frame h2, .output-frame h3,
+  .output-frame h4, .output-frame h5, .output-frame h6 {
+    color: var(--amber);
+    font-family: var(--mono);
+    margin: 0.8em 0 0.4em;
+    line-height: 1.3;
+  }
+  .output-frame h1 { font-size: 1.4em; }
+  .output-frame h2 { font-size: 1.2em; }
+  .output-frame h3 { font-size: 1.05em; }
+  .output-frame p { line-height: 1.7; margin: 0.6em 0; font-size: 14px; }
+  .output-frame ul, .output-frame ol { padding-left: 20px; margin: 0.5em 0; }
+  .output-frame li { margin: 4px 0; font-size: 14px; line-height: 1.6; }
+  .output-frame code {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--green);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 2px 6px;
+  }
+  .output-frame pre {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--amber);
+    padding: 16px;
+    overflow-x: auto;
+    margin: 12px 0;
+  }
+  .output-frame pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .output-frame a { color: var(--amber); }
+  .output-frame strong { color: var(--text); font-weight: 600; }
+  .output-frame em { color: #aab; }
+  .output-frame blockquote {
+    border-left: 3px solid var(--amber);
+    padding-left: 16px;
+    color: var(--muted);
+    margin: 12px 0;
+    font-style: italic;
+  }
+  .output-frame hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 16px 0;
+  }
+  .output-frame table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+  .output-frame th {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: var(--amber);
+  }
+  .output-frame td {
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+  }
+
+  /* Copy button */
+  .copy-btn {
+    margin-left: auto;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { border-color: var(--amber); color: var(--amber); }
+
+  /* CORS note */
+  .provider-note {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 6px 10px;
+    margin-top: 8px;
+    display: none;
+  }
+  .provider-note.warn {
+    background: rgba(255,95,95,0.07);
+    border: 1px solid rgba(255,95,95,0.2);
+    color: #ff9999;
+    display: block;
+  }
+  .provider-note.info {
+    background: rgba(61,220,132,0.07);
+    border: 1px solid rgba(61,220,132,0.2);
+    color: #aaffcc;
+    display: block;
+  }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .left-panel { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<div id="file-warning" style="display:none;background:#2a1500;border-bottom:2px solid var(--amber);padding:12px 28px;font-family:var(--mono);font-size:12px;color:#ffcc80;line-height:1.8">
+  ⚠ <strong>You're opening this as a local file (file://)</strong> — browsers block API calls from local files.<br>
+  Fix: <strong>Option A</strong> — Upload <code style="background:#1a0f00;padding:1px 5px">index.html</code> to GitHub Pages (free, permanent).
+  &nbsp;|&nbsp; <strong>Option B</strong> — Run a local server: open your terminal in the same folder and run
+  <code style="background:#1a0f00;padding:1px 5px">python -m http.server 8080</code> then open
+  <a href="http://localhost:8080" target="_blank" style="color:var(--amber)">http://localhost:8080</a>.
+  &nbsp;|&nbsp; <strong>Option C</strong> — Use the artifact preview in Claude directly.
+</div>
+<header>
+  <div class="logo-mark">AI</div>
+  <h1>Prompt Runner</h1>
+  <span class="tagline">bring your own key · any provider</span>
+</header>
+
+<div class="layout">
+
+  <!-- LEFT: CONFIG -->
+  <div class="left-panel">
+    <div class="section">
+      <div class="section-label">Provider</div>
+
+      <div class="field">
+        <label>AI PROVIDER</label>
+        <select id="provider" onchange="onProviderChange()">
+          <option value="openai">OpenAI (GPT)</option>
+          <option value="gemini">Google Gemini</option>
+          <option value="perplexity">Perplexity AI</option>
+          <option value="groq">Groq</option>
+          <option value="mistral">Mistral AI</option>
+          <option value="openrouter">OpenRouter (any model)</option>
+          <option value="custom">Custom OpenAI-compatible</option>
+        </select>
+        <div class="provider-note" id="provider-note"></div>
+      </div>
+
+      <div class="field">
+        <label>MODEL</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="model" style="flex:1"></select>
+          <button class="copy-btn" onclick="fetchModels()" title="Fetch available models from the API" style="white-space:nowrap;flex-shrink:0;padding:9px 10px">⟳ List</button>
+        </div>
+        <p class="hint" id="model-hint" style="margin-top:6px"></p>
+      </div>
+
+      <div class="field" id="custom-url-field" style="display:none">
+        <label>API BASE URL</label>
+        <input type="text" id="custom-url" placeholder="https://your-api/v1" />
+      </div>
+
+      <div class="field">
+        <label>API KEY</label>
+        <div class="key-wrap">
+          <input type="password" id="api-key" placeholder="Paste your key here" autocomplete="off" />
+          <button class="eye-btn" onclick="toggleKey()" title="Show/hide key">👁</button>
+        </div>
+        <p class="hint" id="key-hint"></p>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Options</div>
+
+      <div class="field">
+        <label>TEMPERATURE</label>
+        <input type="text" id="temperature" value="0.7" style="max-width:80px" />
+      </div>
+
+      <div class="field">
+        <label>MAX TOKENS</label>
+        <input type="text" id="max-tokens" value="2048" style="max-width:80px" />
+      </div>
+
+      <div class="field">
+        <label>OUTPUT FORMAT</label>
+        <select id="output-mode">
+          <option value="html">Render as HTML</option>
+          <option value="markdown">Render Markdown</option>
+          <option value="raw">Raw text</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section" style="flex:1">
+      <div class="section-label">About</div>
+      <p class="hint" style="line-height:1.7">
+        Your API key is <strong>never stored</strong> — it lives only in your browser tab and is sent directly to the provider's API.<br><br>
+        Host this file on <a href="https://pages.github.com" target="_blank">GitHub Pages</a> for free public sharing. Each user enters their own key.<br><br>
+        Edit the prompt template on the right to customize this tool for any use case.
+      </p>
+    </div>
+  </div>
+
+  <!-- RIGHT: PROMPT + OUTPUT -->
+  <div class="right-panel">
+
+    <div class="prompt-area">
+      <div class="section-label">System / Prompt Template</div>
+      <div class="field">
+        <label>SYSTEM PROMPT (optional role/context for the AI)</label>
+        <textarea id="system-prompt" rows="3" placeholder="You are a helpful assistant that returns structured HTML responses. Be concise and well-formatted."></textarea>
+      </div>
+      <div class="field">
+        <label>PROMPT TEMPLATE — use <code style="background:var(--surface2);border:1px solid var(--border);color:var(--amber);padding:1px 5px;font-size:11px">{{input}}</code> where user text should appear</label>
+        <textarea id="prompt-template" rows="5" placeholder="Analyse the following text and return a structured HTML response with sections for Summary, Key Points, and Sentiment:\n\n{{input}}">Analyse the following and return a well-structured HTML response with these sections: a brief Summary, Key Points as a bulleted list, and a final Verdict. Be concise.
+
+{{input}}</textarea>
+        <span class="hint-tag">{{input}} = user's text below</span>
+      </div>
+    </div>
+
+    <div class="user-input-area">
+      <div class="field">
+        <label>USER INPUT</label>
+        <textarea id="user-input" rows="3" placeholder="Type or paste the text you want to run through the prompt above..."></textarea>
+      </div>
+
+      <div class="run-row">
+        <button class="run-btn" id="run-btn" onclick="runPrompt()">▶ Run</button>
+        <div class="status-dot" id="status-dot"></div>
+        <span class="status-text" id="status-text">Ready</span>
+      </div>
+    </div>
+
+    <div class="output-area">
+      <div class="output-label">
+        Output — <span id="output-provider-label">-</span>
+        <button class="copy-btn" onclick="copyOutput()">Copy</button>
+      </div>
+      <div class="output-frame empty" id="output">
+        waiting for run...
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── Provider config ────────────────────────────────────────────────────────
+
+const PROVIDERS = {
+  openai: {
+    name: 'OpenAI',
+    url: 'https://api.openai.com/v1/chat/completions',
+    models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
+    keyHint: 'Get your key at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a>',
+    note: null,
+    type: 'openai'
+  },
+  gemini: {
+    name: 'Google Gemini',
+    url: null, // constructed dynamically
+    models: ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-1.5-pro'],
+    keyHint: 'Get your key at <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>',
+    note: { type: 'info', msg: '✓ Gemini has open CORS — works directly from the browser.' },
+    type: 'gemini'
+  },
+  perplexity: {
+    name: 'Perplexity AI',
+    url: 'https://api.perplexity.ai/chat/completions',
+    models: ['llama-3.1-sonar-large-128k-online', 'llama-3.1-sonar-small-128k-online', 'llama-3.1-sonar-huge-128k-online'],
+    keyHint: 'Get your key at <a href="https://www.perplexity.ai/settings/api" target="_blank">perplexity.ai/settings/api</a>',
+    note: { type: 'info', msg: '✓ Perplexity is OpenAI-compatible and allows browser requests.' },
+    type: 'openai'
+  },
+  groq: {
+    name: 'Groq',
+    url: 'https://api.groq.com/openai/v1/chat/completions',
+    models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it'],
+    keyHint: 'Get your key at <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a>',
+    note: { type: 'info', msg: '✓ Groq is free-tier friendly and very fast.' },
+    type: 'openai'
+  },
+  mistral: {
+    name: 'Mistral AI',
+    url: 'https://api.mistral.ai/v1/chat/completions',
+    models: ['mistral-large-latest', 'mistral-small-latest', 'open-mistral-7b', 'open-mixtral-8x7b'],
+    keyHint: 'Get your key at <a href="https://console.mistral.ai/api-keys/" target="_blank">console.mistral.ai</a>',
+    note: null,
+    type: 'openai'
+  },
+  openrouter: {
+    name: 'OpenRouter',
+    url: 'https://openrouter.ai/api/v1/chat/completions',
+    models: ['anthropic/claude-3.5-sonnet', 'openai/gpt-4o', 'google/gemini-flash-1.5', 'meta-llama/llama-3.3-70b-instruct:free'],
+    keyHint: 'Get your key at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai</a> — routes to 200+ models',
+    note: { type: 'info', msg: '✓ OpenRouter lets you access almost any AI with one key, including free models.' },
+    type: 'openai'
+  },
+  custom: {
+    name: 'Custom',
+    url: null,
+    models: ['custom-model'],
+    keyHint: 'Enter the base URL above and your API key.',
+    note: { type: 'info', msg: 'ℹ Supports any OpenAI-compatible API (local Ollama, LM Studio, etc.).' },
+    type: 'openai'
+  }
+};
+
+// ─── UI init ────────────────────────────────────────────────────────────────
+
+function onProviderChange() {
+  const pid = document.getElementById('provider').value;
+  const p = PROVIDERS[pid];
+
+  // models
+  const modelSel = document.getElementById('model');
+  modelSel.innerHTML = p.models.map(m => `<option value="${m}">${m}</option>`).join('');
+
+  // key hint
+  document.getElementById('key-hint').innerHTML = p.keyHint;
+
+  // note
+  const noteEl = document.getElementById('provider-note');
+  noteEl.className = 'provider-note';
+  if (p.note) {
+    noteEl.classList.add(p.note.type);
+    noteEl.textContent = p.note.msg;
+  }
+
+  // custom url
+  document.getElementById('custom-url-field').style.display = pid === 'custom' ? 'block' : 'none';
+}
+
+function toggleKey() {
+  const inp = document.getElementById('api-key');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function setStatus(state, msg) {
+  const dot = document.getElementById('status-dot');
+  dot.className = 'status-dot ' + state;
+  document.getElementById('status-text').textContent = msg;
+}
+
+// ─── API calls ───────────────────────────────────────────────────────────────
+
+async function callOpenAI(url, key, model, messages, temperature, maxTokens) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${key}`
+    },
+    body: JSON.stringify({ model, messages, temperature, max_tokens: maxTokens })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return data.choices[0].message.content;
+}
+
+async function callGemini(key, model, messages, temperature, maxTokens) {
+  // Convert messages to Gemini format
+  const contents = [];
+  let systemText = '';
+  for (const m of messages) {
+    if (m.role === 'system') { systemText = m.content; continue; }
+    contents.push({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    });
+  }
+  const body = {
+    contents,
+    generationConfig: { temperature, maxOutputTokens: maxTokens }
+  };
+  if (systemText) body.systemInstruction = { parts: [{ text: systemText }] };
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return data.candidates[0].content.parts[0].text;
+}
+
+// ─── Markdown → HTML (simple) ────────────────────────────────────────────────
+
+function markdownToHTML(md) {
+  return md
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>(\n|$))+/g, m => `<ul>${m}</ul>`)
+    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+    .replace(/^---$/gm, '<hr>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/^(?!<[hul]|<li|<hr|<pre)(.+)$/gm, '<p>$1</p>')
+    .replace(/<p><\/p>/g, '');
+}
+
+// ─── Main run ────────────────────────────────────────────────────────────────
+
+async function runPrompt() {
+  const pid = document.getElementById('provider').value;
+  const key = document.getElementById('api-key').value.trim();
+  const model = document.getElementById('model').value;
+  const systemPrompt = document.getElementById('system-prompt').value.trim();
+  const template = document.getElementById('prompt-template').value;
+  const userInput = document.getElementById('user-input').value.trim();
+  const temperature = parseFloat(document.getElementById('temperature').value) || 0.7;
+  const maxTokens = parseInt(document.getElementById('max-tokens').value) || 2048;
+  const outputMode = document.getElementById('output-mode').value;
+
+  if (!key) { alert('Please enter your API key.'); return; }
+  if (!userInput) { alert('Please enter some user input.'); return; }
+
+  const finalPrompt = template.replace(/\{\{input\}\}/g, userInput);
+
+  const messages = [];
+  if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+  messages.push({ role: 'user', content: finalPrompt });
+
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  setStatus('running', 'Calling API...');
+  document.getElementById('output-provider-label').textContent = `${PROVIDERS[pid].name} / ${model}`;
+
+  try {
+    let result;
+    const p = PROVIDERS[pid];
+
+    if (p.type === 'gemini') {
+      result = await callGemini(key, model, messages, temperature, maxTokens);
+    } else {
+      let url = p.url;
+      if (pid === 'custom') url = (document.getElementById('custom-url').value.trim().replace(/\/$/, '')) + '/chat/completions';
+      result = await callOpenAI(url, key, model, messages, temperature, maxTokens);
+    }
+
+    // Render output
+    const outputEl = document.getElementById('output');
+    outputEl.classList.remove('empty');
+
+    if (outputMode === 'raw') {
+      outputEl.textContent = result;
+    } else if (outputMode === 'markdown') {
+      outputEl.innerHTML = markdownToHTML(result);
+    } else {
+      // Try to extract HTML if wrapped in code fences
+      const htmlMatch = result.match(/```html\n([\s\S]*?)```/) || result.match(/```\n([\s\S]*?)```/);
+      outputEl.innerHTML = htmlMatch ? htmlMatch[1] : result;
+    }
+
+    setStatus('ok', `Done · ${new Date().toLocaleTimeString()}`);
+  } catch (err) {
+    setStatus('err', 'Error: ' + err.message);
+    document.getElementById('output').innerHTML = `<span style="color:var(--red);font-family:var(--mono);font-size:12px">Error: ${err.message}</span>`;
+    document.getElementById('output').classList.remove('empty');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function copyOutput() {
+  const el = document.getElementById('output');
+  const text = el.innerText || el.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 1500);
+  });
+}
+
+// ─── Fetch available models ───────────────────────────────────────────────────
+
+async function fetchModels() {
+  const pid = document.getElementById('provider').value;
+  const key = document.getElementById('api-key').value.trim();
+  const hint = document.getElementById('model-hint');
+
+  if (!key) { alert('Enter your API key first.'); return; }
+
+  hint.innerHTML = '<span style="color:var(--amber)">Fetching models...</span>';
+
+  try {
+    let models = [];
+
+    if (pid === 'gemini') {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      models = (data.models || [])
+        .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
+        .map(m => m.name.replace('models/', ''));
+
+    } else if (pid === 'openrouter') {
+      const res = await fetch('https://openrouter.ai/api/v1/models', {
+        headers: { 'Authorization': `Bearer ${key}` }
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      models = (data.data || []).map(m => m.id);
+
+    } else {
+      // Generic OpenAI-compatible /models endpoint
+      const p = PROVIDERS[pid];
+      let base = p.url ? p.url.replace('/chat/completions', '') : null;
+      if (pid === 'custom') base = document.getElementById('custom-url').value.trim().replace(/\/$/, '');
+      if (!base) { hint.innerHTML = '<span style="color:var(--red)">Not supported for this provider.</span>'; return; }
+
+      const res = await fetch(`${base}/models`, {
+        headers: { 'Authorization': `Bearer ${key}` }
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      models = (data.data || []).map(m => m.id).sort();
+    }
+
+    if (!models.length) throw new Error('No models returned');
+
+    // Populate select
+    const sel = document.getElementById('model');
+    sel.innerHTML = models.map(m => `<option value="${m}">${m}</option>`).join('');
+    hint.innerHTML = `<span style="color:var(--green)">✓ Loaded ${models.length} models from your account.</span>`;
+
+  } catch (err) {
+    hint.innerHTML = `<span style="color:var(--red)">Error: ${err.message}</span>`;
+  }
+}
+
+// Init
+onProviderChange();
+if (window.location.protocol === 'file:') {
+  document.getElementById('file-warning').style.display = 'block';
+}
+</script>
+</body>
+</html>
