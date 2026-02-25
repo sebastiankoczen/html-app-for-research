@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI Analyst</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -758,7 +759,7 @@ CONTEXT: We are a boutique Supply Chain & Procurement consulting firm operating 
 TASK
 A list of Tier 1 companies has already been identified through an initial scan. You must now perform a deeper, highly deterministic validation scan of the company provided above by strictly applying the definitions, signals, and source hierarchies provided below.
 
-You will move away from generic summaries and evaluate the companies using a strict "Signal Strength Matrix" and a "Counter-Evidence Check," outputting the final analysis exclusively in a structured HTML table.
+You will move away from generic summaries and evaluate the companies using a strict "Signal Strength Matrix" and a "Counter-Evidence Check," outputting the final analysis exclusively in a structured Markdown table.
 
 ===============================================================================
 MANDATORY SITUATION DEFINITIONS — USE THESE EXCLUSIVELY
@@ -916,13 +917,12 @@ Log findings even if they do not change the classification.
 ===============================================================================
 OUTPUT FORMAT: THE DEEP SCAN TABLE
 ===============================================================================
-Present the deep scan for the company as ONE single unified HTML table.
+Present the deep scan for the company as ONE single unified Markdown table.
 
 CRITICAL RULES:
 - DO NOT write any paragraphs, summaries, or markdown outside of this table.
-- The output must strictly be standard HTML using <table>, <thead>, <tr>, <th>, <tbody>, and <td> tags.
-- Use HTML <ul> and <li> tags inside cells for bulleted lists to ensure readability.
-- Do not wrap the output in markdown code blocks.
+- The output must strictly be a standard Markdown table using | pipes |.
+- Use Markdown bullet points (-) inside cells for readability.
 
 The table must have exactly these 5 columns in this order:
 
@@ -931,11 +931,7 @@ Column 2 — Situation Status (All 4)
 Column 3 — Exact Signals Detected
 Column 4 — Counter-Evidence / Risks
 Column 5 — Verified Sources and Quotes
-`,
-
-  // ── Output rendering ──────────────────────────────────────────────────────
-  outputMode: 'html',
-
+`
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1135,21 +1131,6 @@ async function callGemini(key, model, messages, temp, maxTok) {
   return data.candidates[0].content.parts[0].text;
 }
 
-// ── Markdown → HTML ───────────────────────────────────────────────────────────
-function mdToHtml(md) {
-  return md
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm,  '<h2>$1</h2>')
-    .replace(/^# (.+)$/gm,   '<h1>$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>[\s\S]*?<\/li>\n?)+/g, s => `<ul>${s}</ul>`)
-    .replace(/^---$/gm, '<hr>')
-    .split('\n\n').map(b => b.startsWith('<') ? b : `<p>${b}</p>`).join('');
-}
-
 // ── Main run ──────────────────────────────────────────────────────────────────
 async function runPrompt() {
   const pid       = document.getElementById('provider').value;
@@ -1183,24 +1164,25 @@ async function runPrompt() {
     let result;
     const p = PROVIDERS[pid];
     if (p.type === 'gemini') {
-      result = await callGemini(key, model, messages, 0.7, 2048);
+      result = await callGemini(key, model, messages, 0.7, 8000); // Increased tokens just in case
     } else {
       let url = p.url;
       if (pid === 'custom') url = document.getElementById('custom-url').value.trim().replace(/\/$/, '') + '/chat/completions';
-      result = await callOpenAI(url, key, model, messages, 0.7, 2048);
+      result = await callOpenAI(url, key, model, messages, 0.7, 8000);
     }
 
     document.getElementById('skeleton').classList.remove('visible');
 
+    // Strip out <think> tags in case a reasoning model was selected
+    result = result.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+
     const out = document.getElementById('output-content');
-    if (CONFIG.outputMode === 'raw') {
-      out.textContent = result;
-    } else if (CONFIG.outputMode === 'markdown') {
-      out.innerHTML = mdToHtml(result);
+    
+    // Using the injected Marked.js library to flawlessly render the Markdown table
+    if (typeof marked !== 'undefined') {
+      out.innerHTML = marked.parse(result);
     } else {
-      // Strip code fences if the AI wrapped the HTML
-      const match = result.match(/```html\n?([\s\S]*?)```/) || result.match(/```\n?([\s\S]*?)```/);
-      out.innerHTML = match ? match[1] : result;
+      out.textContent = result; // Safe fallback if internet blocks CDN
     }
 
     setStatus('ready', 'Done');
