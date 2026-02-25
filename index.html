@@ -537,28 +537,14 @@
     </div>
   </div>
 
-  <!-- RIGHT: PROMPT + OUTPUT -->
+  <!-- RIGHT: USER-FACING ONLY -->
   <div class="right-panel">
 
-    <div class="prompt-area">
-      <div class="section-label">System / Prompt Template</div>
+    <div class="user-input-area" style="border-bottom:1px solid var(--border)">
+      <div class="section-label">Your Input</div>
       <div class="field">
-        <label>SYSTEM PROMPT (optional role/context for the AI)</label>
-        <textarea id="system-prompt" rows="3" placeholder="You are a helpful assistant that returns structured HTML responses. Be concise and well-formatted."></textarea>
-      </div>
-      <div class="field">
-        <label>PROMPT TEMPLATE — use <code style="background:var(--surface2);border:1px solid var(--border);color:var(--amber);padding:1px 5px;font-size:11px">{{input}}</code> where user text should appear</label>
-        <textarea id="prompt-template" rows="5" placeholder="Analyse the following text and return a structured HTML response with sections for Summary, Key Points, and Sentiment:\n\n{{input}}">Analyse the following and return a well-structured HTML response with these sections: a brief Summary, Key Points as a bulleted list, and a final Verdict. Be concise.
-
-{{input}}</textarea>
-        <span class="hint-tag">{{input}} = user's text below</span>
-      </div>
-    </div>
-
-    <div class="user-input-area">
-      <div class="field">
-        <label>USER INPUT</label>
-        <textarea id="user-input" rows="3" placeholder="Type or paste the text you want to run through the prompt above..."></textarea>
+        <label id="input-label-text">COMPANY / TEXT TO ANALYSE</label>
+        <textarea id="user-input" rows="5" placeholder="Type or paste your input here..."></textarea>
       </div>
 
       <div class="run-row">
@@ -582,7 +568,40 @@
 </div>
 
 <script>
-// ─── Provider config ────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+//  ✏️  OWNER CONFIG — Edit this section to customise the tool for your users
+// ═══════════════════════════════════════════════════════════════════════════
+
+const CONFIG = {
+  // The title shown in the header
+  appTitle: 'AI Prompt Runner',
+
+  // Label shown above the user's text box
+  inputLabel: 'COMPANY / TEXT TO ANALYSE',
+
+  // Placeholder inside the user's text box
+  inputPlaceholder: 'Enter a company name, topic, or paste any text...',
+
+  // The system prompt (role/persona given to the AI — users never see this)
+  systemPrompt: `You are a professional business analyst. You return clear, well-structured HTML responses. Use headings, bullet points, and short paragraphs. Be concise and objective.`,
+
+  // The prompt template — {{input}} is replaced by whatever the user types
+  promptTemplate: `Analyse the following company or topic and return a structured HTML response with these sections:
+- <h2>Overview</h2> — a 2-3 sentence summary
+- <h2>Key Strengths</h2> — bullet list
+- <h2>Key Risks</h2> — bullet list
+- <h2>Verdict</h2> — a one-sentence conclusion
+
+Topic: {{input}}`,
+
+  // Default output rendering: 'html' | 'markdown' | 'raw'
+  outputMode: 'html',
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Everything below this line is the engine — no need to edit
+// ═══════════════════════════════════════════════════════════════════════════
+
 
 const PROVIDERS = {
   openai: {
@@ -754,12 +773,12 @@ async function runPrompt() {
   const pid = document.getElementById('provider').value;
   const key = document.getElementById('api-key').value.trim();
   const model = document.getElementById('model').value;
-  const systemPrompt = document.getElementById('system-prompt').value.trim();
-  const template = document.getElementById('prompt-template').value;
+  const systemPrompt = CONFIG.systemPrompt;
+  const template = CONFIG.promptTemplate;
   const userInput = document.getElementById('user-input').value.trim();
   const temperature = parseFloat(document.getElementById('temperature').value) || 0.7;
   const maxTokens = parseInt(document.getElementById('max-tokens').value) || 2048;
-  const outputMode = document.getElementById('output-mode').value;
+  const outputMode = CONFIG.outputMode;
 
   if (!key) { alert('Please enter your API key.'); return; }
   if (!userInput) { alert('Please enter some user input.'); return; }
@@ -884,6 +903,11 @@ onProviderChange();
 if (window.location.protocol === 'file:') {
   document.getElementById('file-warning').style.display = 'block';
 }
+// Apply owner config
+document.title = CONFIG.appTitle;
+document.querySelector('header h1').textContent = CONFIG.appTitle;
+document.getElementById('input-label-text').textContent = CONFIG.inputLabel;
+document.getElementById('user-input').placeholder = CONFIG.inputPlaceholder;
 </script>
 </body>
 </html>
